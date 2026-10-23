@@ -25,15 +25,21 @@ func connect(port: UInt16) async throws -> NWConnection {
     let connection = NWConnection(host: "127.0.0.1", port: NWEndpoint.Port(rawValue: port)!, using: .tcp)
     do {
         try await withTimeout(2) {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-                connection.stateUpdateHandler = { state in
-                    switch state {
-                    case .ready: continuation.resume()
-                    case .failed(let error): continuation.resume(throwing: error)
-                    default: break
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    connection.stateUpdateHandler = { state in
+                        switch state {
+                        case .ready: continuation.resume()
+                        case .failed(let error): continuation.resume(throwing: error)
+                        case .cancelled: continuation.resume(throwing: CancellationError())
+                        default: return
+                        }
+                        connection.stateUpdateHandler = nil   // resumed once; the later cancel() must not resume again
                     }
+                    connection.start(queue: .global())
                 }
-                connection.start(queue: .global())
+            } onCancel: {
+                connection.cancel()
             }
         }
     } catch {
@@ -87,13 +93,15 @@ func receiveUntil(_ connection: NWConnection, contains marker: String) async thr
 
 /// Answers whatever it receives with one canned response, then closes. Stands in for the
 /// far end of a CONNECT tunnel.
-final class EchoServer: @unchecked Sendable {
+final class EchoServer: Sendable {
     static let response = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close\r\n\r\nok"
 
     private let listener: NWListener
 
     init() throws {
-        listener = try NWListener(using: .tcp, on: .any)
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
+        listener = try NWListener(using: parameters)
     }
 
     /// Starts listening on loopback; returns the bound port once the listener is ready.
@@ -111,8 +119,9 @@ final class EchoServer: @unchecked Sendable {
                 switch state {
                 case .ready: continuation.resume(returning: self.listener.port?.rawValue ?? 0)
                 case .failed(let error): continuation.resume(throwing: error)
-                default: break
+                default: return
                 }
+                self.listener.stateUpdateHandler = nil   // resumed once; a later state must not resume again
             }
             listener.start(queue: .global())
         }
