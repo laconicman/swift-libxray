@@ -55,7 +55,7 @@ let ports = try await core.freePorts(3, excluding: [10808])
 
 let outbounds = try await core.convertShareLinks(links)  // {"outbounds":[…]} as Data
 let config = """
-    {"log":{"access":"none","loglevel":"warning"},
+    {"log":{"access":"none","loglevel":"none"},
      "inbounds":[{"tag":"in","listen":"127.0.0.1","port":\(ports[0]),
                   "protocol":"mixed","settings":{"udp":false}}],
      "outbounds":[…spliced from `outbounds`…]}
@@ -71,9 +71,9 @@ Two behaviors to plan around (measured on macOS 26, Xray 26.10.21):
 - **`run` returns before the inbounds accept** — the call itself is ~1 ms while the core
   finishes starting ~350 ms later. `isRunning` flips true at once; probe the inbound socket
   before sending traffic.
-- **Xray logs to stderr**, not to the API: a start banner, then one `accepted` line per
-  connection at the default `access` level. Set `"access":"none"` (and `"loglevel"`) in the
-  config's `log` block if stderr is yours.
+- **Xray logs to stdout**, not to the API: a start banner, then one `accepted` line per
+  connection at the default `access` level. Set `"log":{"access":"none","loglevel":"none"}`
+  (or route `"error"` to a file) in the config's `log` block if stdout is yours.
 - `convertShareLinks` returns the engine's **flat** outbound shape —
   `settings:{address,port,id,encryption}` (no `vnext`/`users`), `pbk` →
   `realitySettings.password`, `#fragment` → `tag`. It is the format this core accepts.
