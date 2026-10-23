@@ -36,20 +36,25 @@ the ios-arm64 *archive* size, not binary cost.)
 (`libxray-macos-vX.Y.Z`); `libxray-asset-tool` already produces the zip — add a slice
 filter. Roadmap, *Later*.
 
-### TD-3 — the asset tool shells out to unzip and zip — *open*
+### TD-3 — the asset tool shells out to unzip and zip — *open*, [#5](https://github.com/laconicman/swift-libxray/issues/5)
 
 `libxray-asset-tool` runs `/usr/bin/unzip` and `/usr/bin/zip` via `Process` rather than
 reading the archives itself. Deliberate: the re-zip must match the spike's verified command
 byte for byte, and a Foundation-level archiver would re-decide metadata the checksum
 depends on.
 
-**Cost:** macOS-only maintainer tool (fine — it is one), and the zip's directory
-timestamps are whatever `zip` writes, so the checksum depends on `zip`'s output, not on a
-canonical form we control.
+**Cost:** the checksum depends on `zip`'s output, not on a canonical form we control — and
+that output is only machine-deterministic: `zip` stamps DOS mod-times in *local* time and
+adds members in filesystem traversal order. The review of #4 re-ran the tool on another Mac
+and got a different SHA-256 (`b43840a3…` vs the published `c8827e11…`) over the same byte
+count, identical member CRCs and byte-identical extracted trees. So the published checksum
+is reproducible on the maintainer's machine only, and a re-run elsewhere silently rewrites
+`Upstream/<tag>.json` with the local hash.
 
-**Discharge:** none needed while `zip` output stays deterministic across runs — verified
-twice on v26.10.21 (same sha256). If it ever differs, pin the format inside the tool
-instead of trusting the CLI.
+**Discharge:** at the next asset bump (it changes the published checksum, so not before):
+run `zip` with `TZ=UTC` and a `LC_ALL=C`-sorted member list (`zip -X -@`), or write the
+archive in-process with pinned metadata; refuse to overwrite an `Upstream/<tag>.json` whose
+asset hash differs unless `--force`. Done when two machines in different time zones agree.
 
 ### TD-4 — `-lresolv` was found empirically — *open*
 

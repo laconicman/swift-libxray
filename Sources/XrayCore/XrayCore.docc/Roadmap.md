@@ -18,7 +18,9 @@ is in <doc:Design>.
 - **M1 — reach further into the API (0.2.0).** `pingBatch` (per-config latency without
   owning the engine's lifecycle), iOS build verification against a simulator slice, and the
   upstream-bump workflow exercised once end to end (new tag → tool → record → snippet →
-  release).
+  release), with the byte-reproducible re-zip from TD-3 landing in the same bump; and the
+  engine's lifecycle edges pinned by tests — `run` while running, `test(configJSON:)`
+  while running, `stop` when already stopped — so consumers can rely on them.
 
 ### Later
 

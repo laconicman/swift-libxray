@@ -22,11 +22,15 @@ change for SwiftPM, and exactly two:
 
 - **Layout.** The upstream zip nests `LibXray.xcframework/` under `libxray-apple-cgo/`;
   `binaryTarget` wants it at the archive root, so it is re-zipped (`zip -r -X`, the spike's
-  command — reproducible: it re-hashes identically on re-run).
+  command). Content-reproducible, not byte-reproducible: re-runs re-hash identically on
+  one machine, but `zip` writes local-time stamps and filesystem-order members, so another
+  machine produces a different checksum over byte-identical contents (TD-3,
+  [#5](https://github.com/laconicman/swift-libxray/issues/5)).
 - **Host.** The re-zip has to live somewhere a manifest can pin — this repo's Releases,
   under artifact tags `libxray-vX.Y.Z` that semver resolution ignores. Pinning our own copy
   also insulates consumers from upstream re-tagging or deleting an asset (their release
-  workflow marks releases prerelease); the checksum guards the content either way. The
+  workflow publishes every release as a prerelease first; v26.10.21 has since been
+  promoted); the checksum guards the content either way. The
   provenance record is `Upstream/<tag>.json`, written only by `libxray-asset-tool` —
   upstream publishes no checksums, so this record *is* the provenance (TD-1).
 

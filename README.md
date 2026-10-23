@@ -37,6 +37,9 @@ and depend on the `XrayCore` product. Platforms: macOS 13, iOS 15 — the artifa
 floors, read off its `LC_BUILD_VERSION`s (the xcframework also ships tvOS slices; they are
 simply undeclared here).
 
+Toolchain: Swift 6.4 (Xcode 27). The manifest's `swift-tools-version` is 6.4; Xcode
+26.6's SwiftPM (Swift 6.3.3) cannot parse it, so the package does not resolve there.
+
 ## Usage
 
 All calls go through one actor — the Go runtime is process-global, so `XrayCore.shared` is
@@ -94,8 +97,11 @@ Recorded in [`Upstream/v26.10.21.json`](Upstream/v26.10.21.json) by
 | Slices | macos-arm64_x86_64 · ios-arm64 · ios-arm64_x86_64-simulator · tvos-arm64 · tvos-arm64_x86_64-simulator |
 | Floors (LC_BUILD_VERSION) | macOS 13.0 · iOS 15.0 (tvOS slices exist, undeclared) |
 
-To verify by hand: download the upstream zip, `shasum -a 256` it against the row above,
-then re-zip per the maintainer section and compare.
+To verify by hand: download the upstream zip and `shasum -a 256` it against the row above;
+then download the asset from the release and `swift package compute-checksum` it against
+the checksum row. Do not expect a local re-zip to reproduce that checksum: `zip` stamps
+local time and traverses in filesystem order, so the bytes differ across machines while
+the extracted trees are identical (`diff -r` them if in doubt) — TD-3.
 
 ## Versioning
 
