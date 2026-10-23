@@ -1,0 +1,23 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+# A library: consumers pin their own graphs, so Package.resolved is not committed.
+Package.resolved
+
+# Local copies of the engine artifact (the package links the Release asset by URL + checksum)
+Artifacts/
+*.xcframework
+*.xcframework.zip
+
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+
+# macOS
+.DS_Store
+
+# Editor
+*.swp
+.vscode/
+.idea/
