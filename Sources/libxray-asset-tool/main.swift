@@ -31,6 +31,11 @@ func usage() -> Never {
 var arguments = Array(CommandLine.arguments.dropFirst())
 guard let tag = arguments.first, !tag.hasPrefix("-") else { usage() }
 arguments.removeFirst()
+// Upstream tags are CalVer `vYY.M.D`. The tag becomes a URL and two file names, so anything
+// else is refused here rather than trapping in `URL(string:)` or escaping the output folders.
+guard tag.wholeMatch(of: /v\d+\.\d+\.\d+/) != nil else {
+    fail("invalid upstream tag '\(tag)': expected vYY.M.D, e.g. v26.10.21")
+}
 
 var outPath = "Artifacts"
 while let argument = arguments.first {
@@ -53,6 +58,14 @@ func run(_ tool: String, _ toolArguments: [String], cwd: URL) throws {
         throw NSError(domain: "libxray-asset-tool", code: Int(process.terminationStatus),
                       userInfo: [NSLocalizedDescriptionKey: "\(tool) exited \(process.terminationStatus)"])
     }
+}
+
+/// A pipeline failure after the work directory exists: thrown, not `exit`ed, so the
+/// directory's `defer` cleanup runs before `fail` prints it.
+struct ToolError: LocalizedError {
+    let message: String
+    init(_ message: String) { self.message = message }
+    var errorDescription: String? { message }
 }
 
 func sha256(of file: URL) throws -> (hex: String, bytes: Int) {
@@ -78,14 +91,16 @@ struct Provenance: Encodable {
 do {
     let fileManager = FileManager.default
     let upstreamURL = "https://github.com/XTLS/libXray/releases/download/\(tag)/libxray-apple-cgo.zip"
+    guard let downloadURL = URL(string: upstreamURL) else { fail("malformed upstream URL \(upstreamURL)") }
 
     // 1. Download the upstream zip.
-    let (downloaded, response) = try await URLSession.shared.download(from: URL(string: upstreamURL)!)
+    let (downloaded, response) = try await URLSession.shared.download(from: downloadURL)
     guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
         fail("download failed: HTTP \((response as? HTTPURLResponse)?.statusCode ?? -1) for \(upstreamURL)")
     }
     let work = fileManager.temporaryDirectory.appendingPathComponent("libxray-asset-tool-\(UUID().uuidString)")
     try fileManager.createDirectory(at: work, withIntermediateDirectories: true)
+    defer { try? fileManager.removeItem(at: work) }
     let zip = work.appendingPathComponent("libxray-apple-cgo.zip")
     try fileManager.moveItem(at: downloaded, to: zip)
     let upstream = try sha256(of: zip)
@@ -103,14 +118,14 @@ do {
             break
         }
     }
-    guard let xcframework else { fail("no LibXray.xcframework in the upstream zip") }
+    guard let xcframework else { throw ToolError("no LibXray.xcframework in the upstream zip") }
     let parent = xcframework.deletingLastPathComponent()
 
     // 3. Read the slices out of Info.plist.
     let plistData = try Data(contentsOf: xcframework.appendingPathComponent("Info.plist"))
     guard let plist = try PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any],
           let libraries = plist["AvailableLibraries"] as? [[String: Any]]
-    else { fail("unreadable Info.plist in LibXray.xcframework") }
+    else { throw ToolError("unreadable Info.plist in LibXray.xcframework") }
     let slices = libraries.compactMap { $0["LibraryIdentifier"] as? String }
     print("slices: \(slices.joined(separator: ", "))")
 
