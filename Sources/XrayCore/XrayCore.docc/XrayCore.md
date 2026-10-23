@@ -15,8 +15,9 @@ engine behaviors to plan around:
 
 - ``XrayCore/run(configJSON:)`` returns before the inbounds accept (~1 ms call vs ~350 ms
   to accept, measured on macOS 26). Probe the inbound itself before sending traffic.
-- Xray writes its log to stderr; the JSON API has no log hook. `"log":{"access":"none"}`
-  quiets the per-connection lines.
+- Xray writes its log to **stdout**; the JSON API has no log hook.
+  `"log":{"access":"none","loglevel":"none"}` silences it entirely — mandatory when the
+  process's stdout is a payload or protocol channel.
 
 `convertShareLinks` returns `{"outbounds":[…]}` in the flat shape this core builds:
 `settings` carries `{address, port, id, encryption}` directly (no `vnext`), `pbk` lands in

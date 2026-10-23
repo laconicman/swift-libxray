@@ -80,13 +80,19 @@ immediately, so it can't serve as a barrier either.
 **Discharge:** upstream adds a readiness method or `runXray` blocks until listening; or
 this package grows an opt-in `run(configJSON:awaitingInbound:)` that polls a named inbound.
 
-### TD-6 — Xray logs to stderr, no API — *open*, [#3](https://github.com/laconicman/swift-libxray/issues/3)
+### TD-6 — Xray logs to stdout, no API — *open*, [#3](https://github.com/laconicman/swift-libxray/issues/3)
 
-The core writes its banner and per-connection `accepted` lines straight to stderr; the JSON
-API exposes no log stream and no level control beyond the config's `log` block.
+The core writes its banner and per-connection `accepted` lines straight to **stdout** —
+`app/log/log_creator.go` at v26.10.21 registers `LogType_Console` with
+`CreateStdoutLogWriter()`, which is `log.New(os.Stdout, …)` in `common/log/logger.go`
+([source](https://github.com/XTLS/Xray-core/blob/v26.10.21/app/log/log_creator.go)). The
+JSON API exposes no log stream and no level control beyond the config's `log` block;
+`"access":"none"` drops the per-connection lines, only `"loglevel":"none"` (or
+`"error":"<path>"`) silences the banner.
 
-**Cost:** a consumer that owns stderr (an MCP stdio server, say) must silence Xray in the
-config (`"access":"none"`, `"loglevel"`) or capture the descriptor itself.
+**Cost:** a consumer whose stdout is its payload or protocol channel (a CLI printing a
+fetch, an MCP stdio server) *must* set `"loglevel":"none"` or route `"error"` to a file —
+otherwise the engine corrupts its output with banner lines.
 
 **Discharge:** upstream grows a log callback or file redirect. Nothing to patch around
 here — fd redirection would hide Xray's own crash output too.

@@ -12,9 +12,11 @@ public import Foundation
 /// - ``run(configJSON:)`` *returns before the inbounds accept*. The call itself takes
 ///   ~1 ms, while the core finishes starting ~350 ms later. ``isRunning`` flips true at
 ///   once; probe the inbound socket itself before sending traffic.
-/// - Xray writes its own log to **stderr** — start banner, then one `accepted` line per
-///   connection — and the JSON API exposes no log hook. Silence it at the config level
-///   (`"log":{"access":"none","loglevel":"none"}`) if stderr is yours.
+/// - Xray writes its own log to **stdout** — start banner, then one `accepted` line per
+///   connection — and the JSON API exposes no log hook (`app/log/log_creator.go` at
+///   v26.10.21 registers the console writer as `log.New(os.Stdout, …)`). Silence it at
+///   the config level (`"log":{"access":"none","loglevel":"none"}`) or route it to a
+///   file (`"log":{"access":"none","error":"<path>"}`) if stdout is yours.
 public actor XrayCore {
     /// The shared instance: the Go runtime is process-global; this actor is its only door.
     public static let shared = XrayCore()
