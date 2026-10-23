@@ -1,0 +1,5 @@
+# Swift Package Index: build the DocC catalog for the one library product.
+version: 1
+builder:
+  configs:
+    - documentation_targets: [XrayCore]
