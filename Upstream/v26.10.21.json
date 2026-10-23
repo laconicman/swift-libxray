@@ -1,0 +1,17 @@
+{
+  "assetBytes" : 101517039,
+  "assetName" : "LibXray-v26.10.21.xcframework.zip",
+  "assetSHA256" : "c8827e11c5debb005e07510e7450bed399fab93b4dba5c24747b2f1864dfedc0",
+  "recordedAt" : "2026-10-23T12:51:42Z",
+  "slices" : [
+    "macos-arm64_x86_64",
+    "ios-arm64",
+    "ios-arm64_x86_64-simulator",
+    "tvos-arm64",
+    "tvos-arm64_x86_64-simulator"
+  ],
+  "upstreamBytes" : 101519579,
+  "upstreamSHA256" : "f318d216bb3b16b18d7b04c54789d1feaa6b7571433ed5582c1fe776e3776ef1",
+  "upstreamTag" : "v26.10.21",
+  "upstreamURL" : "https://github.com/XTLS/libXray/releases/download/v26.10.21/libxray-apple-cgo.zip"
+}

@@ -1,0 +1,11 @@
+# Monthly, near-silent: the package's only SwiftPM dependency (the DocC plugin) and the
+# actions CI pins. Engine assets are not Dependabot's business — they move through
+# libxray-asset-tool and an `engine-asset` PR.
+version: 2
+updates:
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule: { interval: "monthly" }
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "monthly" }
