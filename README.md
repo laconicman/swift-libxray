@@ -55,7 +55,7 @@ let ports = try await core.freePorts(3, excluding: [10808])
 
 let outbounds = try await core.convertShareLinks(links)  // {"outbounds":[…]} as Data
 let config = """
-    {"log":{"access":"none","loglevel":"warning"},
+    {"log":{"access":"none","loglevel":"none"},
      "inbounds":[{"tag":"in","listen":"127.0.0.1","port":\(ports[0]),
                   "protocol":"mixed","settings":{"udp":false}}],
      "outbounds":[…spliced from `outbounds`…]}
